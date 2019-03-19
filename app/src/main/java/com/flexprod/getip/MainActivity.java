@@ -9,6 +9,7 @@ import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -28,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 public class MainActivity extends AppCompatActivity {
 
     TextView responseView;
+    TextView detailsView;
     ProgressBar progressBar;
     static final String API_URL = "https://checkip.amazonaws.com";
     private String filename = "Guy_IP";
@@ -39,13 +41,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         responseView = findViewById(R.id.responseView2);
+        detailsView = findViewById(R.id.editText);
         Log.i("Felix", "Requesting permissions: " );
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }else{
             //Do things as usual
         }
-        responseView.setText(getExistingFile(filename));
+        detailsView.setText(Formatter.formatShortFileSize(getApplicationContext(),filename.length()));
+        responseView.setText(getExistingFile(filename) +
+                System.getProperty("line.separator")) ;
 
         progressBar = findViewById(R.id.progressBar);
 
@@ -70,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
 
                 try {
                     while ((line = buffreader.readLine()) != null)
-                        line1 += line;
+                        line1 = line1 + "\n" + line;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -78,7 +83,6 @@ public class MainActivity extends AppCompatActivity {
         }catch (Exception e)
         {
             String error="";
-            error=e.getMessage();
         }
         return line1;
     }
@@ -103,9 +107,16 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {
             WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             progressBar.setVisibility(View.VISIBLE);
-            responseView.setText(responseView.getText() + System.getProperty("line.separator")  +  dtf.format(ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" ))) + System.getProperty("line.separator")  + wm.getConnectionInfo().getSSID());
-         // Commented next line out on 13.3.19, I was cleaning up carriage returns in saved file, also fixing teh way dates appear
-            //   responseView.setText(responseView.getText() + "\n" + ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" )) + "\n" + wm.getConnectionInfo().getSSID());
+            responseView.setText(responseView.getText() +
+                    dtf.format(ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" ))) +
+                    System.getProperty("line.separator")  +
+                    wm.getConnectionInfo().getSSID() +
+                    System.getProperty("line.separator") );
+            writeFile(filename,getExistingFile(filename)
+                    + System.getProperty("line.separator")
+                    + dtf.format(ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" )))
+                    + System.getProperty("line.separator")
+                    + wm.getConnectionInfo().getSSID() );
         }
 
         protected String doInBackground(Void... urls) {
@@ -140,11 +151,14 @@ public class MainActivity extends AppCompatActivity {
             }
             progressBar.setVisibility(View.GONE);
             Log.i("Felix", response);
-            responseView.setText(responseView.getText() + System.getProperty("line.separator") + response + System.getProperty("line.separator"));
-            writeFile(filename,getExistingFile(filename) + System.getProperty("line.separator") + dtf.format(ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" ))) + System.getProperty("line.separator")  +  response);
-            //writeFile(filename,getExistingFile(filename) + System.getProperty("line.separator") + dtf.format(ZonedDateTime.now) ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" )) + "\n" +  response + System.getProperty("line.separator"));
-
-        }
+            responseView.setText(responseView.getText()
+                    + response
+                    + System.getProperty("line.separator"));
+            writeFile(filename,getExistingFile(filename)
+                    + System.getProperty("line.separator")
+                    +  response
+                    + System.getProperty("line.separator") );
+            }
 
 
     }

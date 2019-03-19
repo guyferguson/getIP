@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">GetIP</string>
-
+<string name="edit_text">Filesize:</string>
     <string name="button_send">Check IP</string>
 </resources>
