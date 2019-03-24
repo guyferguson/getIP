@@ -11,7 +11,7 @@
 
     <EditText
         android:id="@+id/editText"
-        android:layout_width="75dp"
+        android:layout_width="95dp"
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="none" />
@@ -24,8 +24,6 @@
           style="@style/Base.Widget.AppCompat.Button.Borderless"
           android:text="@string/button_send" />
 
-
-
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -33,10 +31,10 @@
 
         <ProgressBar
             android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:layout_centerHorizontal="true"
+            android:indeterminate="true"
             android:visibility="gone" />
 
         <ScrollView

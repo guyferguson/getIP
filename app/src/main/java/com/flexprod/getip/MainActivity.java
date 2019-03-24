@@ -17,6 +17,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,25 +35,29 @@ public class MainActivity extends AppCompatActivity {
     static final String API_URL = "https://checkip.amazonaws.com";
     private String filename = "Guy_IP";
     final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    File tmpFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d("Felix","Starting the app");
+        Log.d("GetIP","Starting the app");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         responseView = findViewById(R.id.responseView2);
         detailsView = findViewById(R.id.editText);
-        Log.i("Felix", "Requesting permissions: " );
+        Log.i("GetIP", "Requesting permissions: " );
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-        }else{
-            //Do things as usual
         }
-        detailsView.setText(Formatter.formatShortFileSize(getApplicationContext(),filename.length()));
+        // Check if there is a GetIP file for storing results
+        tmpFile = new File(filename);
+        if (!(tmpFile.exists())) {
+            Log.i("GetIP","Creating " + filename + " for first use");
+        }
         responseView.setText(getExistingFile(filename) +
                 System.getProperty("line.separator")) ;
 
         progressBar = findViewById(R.id.progressBar);
+        detailsView.setText(Formatter.formatShortFileSize(getApplicationContext(),tmpFile.length()));
 
         Button queryButton = findViewById(R.id.button);
         queryButton.setOnClickListener(new View.OnClickListener() {
@@ -61,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
                 new RetrieveFeedTask().execute();
             }
         });
-        Log.d("Felix","OnCreate finishes");
+        Log.d("GetIP","OnCreate finishes");
     }
     protected String getExistingFile(String filename) {
         String line, line1 = "";
@@ -102,27 +107,29 @@ public class MainActivity extends AppCompatActivity {
 
     class RetrieveFeedTask extends AsyncTask<Void, Void, String> {
 
-        private Exception exception;
-
         protected void onPreExecute() {
             WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             progressBar.setVisibility(View.VISIBLE);
-            responseView.setText(responseView.getText() +
-                    dtf.format(ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" ))) +
-                    System.getProperty("line.separator")  +
-                    wm.getConnectionInfo().getSSID() +
-                    System.getProperty("line.separator") );
+            StringBuilder s1 = new StringBuilder();
+            s1.append(responseView.getText());
+            s1.append( dtf.format(ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" ))));
+            s1.append(System.getProperty("line.separator"));
+            s1.append( wm.getConnectionInfo().getSSID());
+            s1.append(System.getProperty("line.separator"));
+            responseView.setText(s1);
             writeFile(filename,getExistingFile(filename)
                     + System.getProperty("line.separator")
                     + dtf.format(ZonedDateTime.now(ZoneId.of( "Australia/Brisbane" )))
                     + System.getProperty("line.separator")
                     + wm.getConnectionInfo().getSSID() );
+            //Disable the button to avoid multiple calls overrunning each other
+            Button queryButton = findViewById(R.id.button);
+            queryButton.setEnabled(false);
         }
 
         protected String doInBackground(Void... urls) {
-            //   String email = emailText.getText().toString();
             // Do some validation here
-            Log.d("Felix", "About to call to amazon");
+            Log.d("GetIP", "About to call to amazon");
 
             try {
                 URL url = new URL(API_URL);
@@ -140,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
                     urlConnection.disconnect();
                 }
             } catch (Exception e) {
-                Log.e("ERROR", e.getMessage(), e);
+                Log.e("GetIP", e.getMessage(), e);
                 return null;
             }
         }
@@ -150,15 +157,21 @@ public class MainActivity extends AppCompatActivity {
                 response = "THERE WAS AN ERROR";
             }
             progressBar.setVisibility(View.GONE);
-            Log.i("Felix", response);
-            responseView.setText(responseView.getText()
-                    + response
-                    + System.getProperty("line.separator"));
+            Log.i("GetIP", response);
+            StringBuilder s1 = new StringBuilder();
+            s1.append(responseView.getText());
+            s1.append(response);
+            s1.append(System.getProperty("line.separator"));
+            responseView.setText(s1);
             writeFile(filename,getExistingFile(filename)
                     + System.getProperty("line.separator")
                     +  response
                     + System.getProperty("line.separator") );
+            //Re-enable the Get IP button
+            Button queryButton = findViewById(R.id.button);
+            queryButton.setEnabled(true);
             }
+
 
 
     }
