@@ -26,6 +26,7 @@ import java.net.URL;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -65,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
         this.registerReceiver(mNetworkReceiver, filter);
 
    //     progressBar = findViewById(R.id.progressBar);
-        detailsView.setText(Formatter.formatShortFileSize(getApplicationContext(),getExistingFile(filename).toString().length()));
+        detailsView.setText("Log size: " +Formatter.formatShortFileSize(getApplicationContext(),getExistingFile(filename).toString().length()));
 
         Button queryButton = findViewById(R.id.button);
         queryButton.setOnClickListener(new View.OnClickListener() {
@@ -77,9 +78,9 @@ public class MainActivity extends AppCompatActivity {
         Log.d("GetIP","OnCreate finishes");
     }
 
-
     protected  String getExistingFile(String filename) {
-        String line, line1="";
+        String line;
+        String line1="";
         //StringBuilder line1 = new StringBuilder();
         InputStream inputStream;
         try {
@@ -93,14 +94,11 @@ public class MainActivity extends AppCompatActivity {
                         if (!(line.equals("")) ) {
                         line1 = line1 + System.getProperty("line.separator") + line;
                     }
-                    //line1.append("\n");
-                      //  line1.append(line);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-        }catch (Exception e)
-        {
+        }catch (Exception e) {
             String error="";
         }
         return line1;
@@ -185,6 +183,8 @@ public class MainActivity extends AppCompatActivity {
            // progressBar.setVisibility(View.GONE);
             Log.i("GetIP", response);
             StringBuilder s1 = new StringBuilder();
+            responseView.setTextColor(Color.BLACK);
+            responseView.setBackgroundColor(Color.WHITE);
             s1.append(responseView.getText());
             s1.append(response);
             s1.append(System.getProperty("line.separator"));
@@ -208,6 +208,11 @@ public class MainActivity extends AppCompatActivity {
         {
             try
             {
+                String id = intent.getStringExtra("notificationID");
+                HashMap<String, String> myMap = new HashMap<String, String>();
+                myMap.put("1","test");
+                if (myMap.get(id) != null)
+                    return;
                 StringBuilder s1 = new StringBuilder();
                 s1.append(responseView.getText());
                 s1.append(System.getProperty("line.separator"));
@@ -216,10 +221,10 @@ public class MainActivity extends AppCompatActivity {
                 responseView.setTextColor(Color.WHITE);
                 s1.setLength(0);
                 s1.append(responseView.getText());
+                responseView.setTextColor(Color.RED);
                 s1.append("Network change detected");
                 s1.append(System.getProperty("line.separator"));
                 responseView.setText(s1);
-                responseView.setBackgroundColor(Color.WHITE);
                 writeFile(filename, getExistingFile(filename)
                         + System.getProperty("line.separator")
                         + dtf.format(ZonedDateTime.now(ZoneId.of("Australia/Brisbane")))
@@ -229,6 +234,8 @@ public class MainActivity extends AppCompatActivity {
                 responseView.setTextColor(Color.BLACK);
                     new RetrieveFeedTask().execute();
                 Log.e("GetIP", "Network change");
+                //Avoid two firings of this intent
+                myMap.put(id, "Fired");
 
             } catch (NullPointerException e) {
                 e.printStackTrace();
