@@ -37,17 +37,19 @@
             android:indeterminate="true"
             android:visibility="gone" />
 
-        <ScrollView
+   <!--   <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-
+-->
             <TextView
+                android:gravity="bottom"
+                android:scrollbars = "vertical"
                 android:id="@+id/responseView2"
                 android:clickable="false"
                 android:inputType="none"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
-        </ScrollView>
+    <!--   </ScrollView> -->
     </RelativeLayout>
 
 
