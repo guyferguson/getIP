@@ -18,6 +18,7 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
     boolean isGPSEnabled;
     TextView responseView;
     TextView detailsView;
+int i;
+    ProgressBar progressBar;
     static final String API_URL = "https://checkip.amazonaws.com";
     static String filename = "Guy_IP";
     final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -63,19 +66,22 @@ public class MainActivity extends AppCompatActivity {
         s2.append(getExistingFile(filename));
         s2.append(System.getProperty("line.separator"));
 
+        progressBar = findViewById(R.id.progressBar);
         responseView.setMovementMethod(new ScrollingMovementMethod().getInstance());
         responseView.setMaxLines(20);
         responseView.setText(s2) ;
-    // Scroll to end of TextView
+        // Scroll to end of TextView
 
         // Tell application we want to listen for network changes
+        // Connectivity action filter seems to identify the SSID and IP, whereas Supp_Conn_Chaneg_action jfires too early and reports old IP and SSID
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+       // IntentFilter filter = new IntentFilter(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
 
         // My Moto G5 Plus cannot go above Android 8.1 (API 27). This action is deprecated at API 28
-        filter.addAction(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
+       // filter.addAction(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
         this.registerReceiver(mNetworkReceiver, filter);
 
-        detailsView.setText("Log size: " +Formatter.formatShortFileSize(getApplicationContext(),getExistingFile(filename).toString().length()));
+        detailsView.setText("Log size: " +Formatter.formatShortFileSize(getApplicationContext(),getExistingFile(filename).length()));
 
         Button queryButton = findViewById(R.id.button);
         queryButton.setOnClickListener(new View.OnClickListener() {
@@ -89,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected  String getExistingFile(String filename) {
         String line;
-        String line1="";
+        StringBuilder line1= new StringBuilder();
 
         InputStream inputStream;
         try {
@@ -101,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     while ((line = buffreader.readLine()) != null)
                         if (!(line.equals("")) ) {
-                        line1 = line1 + System.getProperty("line.separator") + line;
+                        line1.append(System.getProperty("line.separator")).append(line);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -110,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
         }catch (Exception e) {
             String error="";
         }
-        return line1;
+        return line1.toString();
     }
 
     protected void writeFile(String filename, String fileContents) {
@@ -153,40 +159,9 @@ public class MainActivity extends AppCompatActivity {
     class RetrieveFeedTask extends AsyncTask<Void, Void, String> {
 
         protected void onPreExecute() {
-           WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
-           // Check if Location Services has been enabled since GetIP startup
-            LocationManager locationManager = (LocationManager)  getApplicationContext().getSystemService(LOCATION_SERVICE);
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                isGPSEnabled = true;
-            } else {
-                isGPSEnabled = false;
-            }
+            progressBar.setVisibility(View.VISIBLE);
 
-            StringBuilder s1 = new StringBuilder();
-            s1.append(responseView.getText());
-            s1.append(dtf.format(ZonedDateTime.now(ZoneId.of("Australia/Brisbane"))));
-            if (!(isGPSEnabled)) {
-                s1.append(System.getProperty("line.separator"));
-                s1.append("Location Services disabled - SSID will show as unknown");
-            }
-            s1.append(System.getProperty("line.separator"));
-            s1.append(wm.getConnectionInfo().getSSID());
-            s1.append(System.getProperty("line.separator"));
-            responseView.setText(s1);
-
-            StringBuilder s3 = new StringBuilder();
-            if (!(isGPSEnabled)) {
-                s3.append(System.getProperty("line.separator"));
-                s3.append("Location Services disabled - SSID will show as unknown");
-            }
-
-            writeFile(filename, getExistingFile(filename)
-                    + System.getProperty("line.separator")
-                    + dtf.format(ZonedDateTime.now(ZoneId.of("Australia/Brisbane")))
-                    + s3
-                    + System.getProperty("line.separator")
-                    + wm.getConnectionInfo().getSSID());
             //Disable the button to avoid multiple calls overrunning each other
             Button queryButton = findViewById(R.id.button);
             queryButton.setEnabled(false);
@@ -217,26 +192,57 @@ public class MainActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String response) {
-            if (response == null) {
-                response = "THERE WAS AN ERROR";
-            }
-           // progressBar.setVisibility(View.GONE);
-            Log.i("GetIP", response);
-            StringBuilder s3 = new StringBuilder();
-            responseView.setTextColor(Color.BLACK);
+            responseView.setTextColor(Color.BLACK);  // Return background colour after green of change
             responseView.setBackgroundColor(Color.WHITE);
-            s3.append(responseView.getText());
-            s3.append(response);
-            s3.append(System.getProperty("line.separator"));
-            responseView.setText(s3);
+
+            StringBuilder s1 = new StringBuilder();
+            s1.append(responseView.getText());      // Pull back all existing displayed text
+            s1.append(System.getProperty("line.separator"));
+            s1.append(dtf.format(ZonedDateTime.now(ZoneId.of("Australia/Brisbane"))));
+            s1.append(System.getProperty("line.separator"));
+            // Check if Location Services has been enabled since GetIP startup
+            LocationManager locationManager = (LocationManager)  getApplicationContext().getSystemService(LOCATION_SERVICE);
+            isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            if (!(isGPSEnabled)) {
+                s1.append(R.string.lsd);  // Location Services Disabled
+                s1.append(System.getProperty("line.separator"));
+            }
+            WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+
+            if (response == null) {   //No IP has been returned
+                response = "THERE WAS AN ERROR";
+                s1.append(response);
+                responseView.setText(s1);
+            } else {   // we have an IP address
+                Log.i("GetIP", response);
+
+                s1.append(wm.getConnectionInfo().getSSID());
+                s1.append(System.getProperty("line.separator"));
+                s1.append(response);
+                s1.append(System.getProperty("line.separator"));
+                responseView.setText(s1);
+            }
+
+            StringBuilder s3 = new StringBuilder();  //Build a string just for writing to file
+            if (!(isGPSEnabled)) {
+                s3.append(System.getProperty("line.separator"));
+                s3.append(R.string.lsd);
+            }
+
             writeFile(filename, getExistingFile(filename)
+                    + System.getProperty("line.separator")
+                    + dtf.format(ZonedDateTime.now(ZoneId.of("Australia/Brisbane")))
+                    + s3
+                    + System.getProperty("line.separator")
+                    + wm.getConnectionInfo().getSSID()
                     + System.getProperty("line.separator")
                     + response
                     + System.getProperty("line.separator"));
+
             //Re-enable the Get IP button
             Button queryButton = findViewById(R.id.button);
             queryButton.setEnabled(true);
-
+            progressBar.setVisibility(View.GONE);
         }
     }
 
@@ -253,14 +259,16 @@ public class MainActivity extends AppCompatActivity {
                     isGPSEnabled = true;
                 } else {
                    responseView.setText(System.getProperty("line.separator"));
-                   responseView.setText("Location Services disabled.");
+                   responseView.setText(R.string.lsd);
                    isGPSEnabled = false;
                 }
                 String id = intent.getStringExtra("notificationID");
                 HashMap<String, String> myMap = new HashMap<String, String>();
                 myMap.put("1","test");
-                if (myMap.get(id) != null)
+                if (myMap.get(id) != null) {
+                    Toast.makeText(context, "Ignoring duplicate network change: " + id, Toast.LENGTH_SHORT).show();
                     return;
+                }
                 StringBuilder s4 = new StringBuilder();
                 s4.append(responseView.getText());
                 s4.append(System.getProperty("line.separator"));
@@ -268,10 +276,12 @@ public class MainActivity extends AppCompatActivity {
                 responseView.setBackgroundColor(Color.GREEN);
                 responseView.setTextColor(Color.WHITE);
                 s4.setLength(0);
+
                 WifiManager wm = (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
                 WifiInfo wifiInfo = wm.getConnectionInfo();
-                String ssid = wifiInfo.getSSID();
-                s4.append(wm.getConnectionInfo().getSSID());
+                String ssid;
+                ssid = wifiInfo.getSSID();
+                s4.append(ssid);
                 s4.append(responseView.getText());
                 responseView.setTextColor(Color.RED);
                 s4.append("Network change detected");
@@ -287,6 +297,8 @@ public class MainActivity extends AppCompatActivity {
                     new RetrieveFeedTask().execute();
                 Log.e("GetIP", "Network change");
                 //Avoid two firings of this intent
+                i=i+1;
+                Toast.makeText(context, "Network change: " + i, Toast.LENGTH_SHORT).show();
                 myMap.put(id, "Fired");
 
             } catch (NullPointerException e) {
