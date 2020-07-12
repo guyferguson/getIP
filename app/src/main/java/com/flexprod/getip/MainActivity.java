@@ -67,7 +67,7 @@ int i;
         s2.append(System.getProperty("line.separator"));
 
         progressBar = findViewById(R.id.progressBar);
-        responseView.setMovementMethod(new ScrollingMovementMethod().getInstance());
+        responseView.setMovementMethod(new ScrollingMovementMethod());
         responseView.setMaxLines(20);
         responseView.setText(s2) ;
         // Scroll to end of TextView
@@ -207,21 +207,17 @@ int i;
                 s1.append(R.string.lsd);  // Location Services Disabled
                 s1.append(System.getProperty("line.separator"));
             }
+            Log.i("GetIP", response);
             WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
             if (response == null) {   //No IP has been returned
                 response = "THERE WAS AN ERROR";
-                s1.append(response);
-                responseView.setText(s1);
-            } else {   // we have an IP address
-                Log.i("GetIP", response);
-
+             } else {   // we have an IP address
                 s1.append(wm.getConnectionInfo().getSSID());
                 s1.append(System.getProperty("line.separator"));
-                s1.append(response);
-                s1.append(System.getProperty("line.separator"));
-                responseView.setText(s1);
             }
+            s1.append(response);
+            responseView.setText(s1);
 
             StringBuilder s3 = new StringBuilder();  //Build a string just for writing to file
             if (!(isGPSEnabled)) {
