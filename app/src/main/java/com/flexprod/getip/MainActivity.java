@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.location.LocationManager;
@@ -38,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     boolean isGPSEnabled;
     TextView responseView;
     TextView detailsView;
+    TextView versionView;
 int i;
     ProgressBar progressBar;
     static final String API_URL = "https://checkip.amazonaws.com";
@@ -45,14 +48,25 @@ int i;
     final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     File tmpFile;
     private MyReceiver mNetworkReceiver;
+    String version;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("GetIP","Starting the app");
         super.onCreate(savedInstanceState);
+
+        // Read versionName from build gradle app
+        try {
+            PackageInfo pInfo = this.getPackageManager().getPackageInfo(getPackageName(), 0);
+            version = pInfo.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
         setContentView(R.layout.activity_main);
         responseView = findViewById(R.id.responseView2);
         detailsView = findViewById(R.id.editText);
+        versionView = findViewById(R.id.versionName);
+        versionView.setText("Version: " + version);
         mNetworkReceiver = new MyReceiver();
 
         Log.i("GetIP", "Requesting permissions: " );
