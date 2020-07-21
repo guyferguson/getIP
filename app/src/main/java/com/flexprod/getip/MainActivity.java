@@ -66,7 +66,7 @@ int i;
         responseView = findViewById(R.id.responseView2);
         detailsView = findViewById(R.id.editText);
         versionView = findViewById(R.id.versionName);
-        versionView.setText("Version: " + version);
+        versionView.setText(getString(R.string.LblVersion) + ": " + version);
         mNetworkReceiver = new MyReceiver();
 
         Log.i("GetIP", "Requesting permissions: " );
